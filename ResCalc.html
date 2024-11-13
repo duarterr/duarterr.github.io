@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Combinações de Resistores</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            width: 600px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 20px;
+            text-align: center;
+        }
+
+        label,
+        input,
+        select {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e6f7ff;
+            border: 1px solid #b3e5fc;
+            border-radius: 4px;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Calculadora de Resistores</h1>
+        <label for="resistencia">Resistência desejada (Ω):</label>
+        <input type="number" id="resistencia" step="0.1" placeholder="Ex: 170000" required>
+
+        <label for="tolerancia">Tolerância (%):</label>
+        <input type="number" id="tolerancia" step="0.1" value="10" required>
+
+
+        <label for="max_resistores">Máximo de resistores na combinação:</label>
+        <select id="max_resistores">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
+
+        <label for="serie">Série de resistores:</label>
+        <select id="serie">
+            <option value="E24">E24</option>
+            <option value="E48">E48</option>
+            <option value="E96">E96</option>
+        </select>
+
+        <button onclick="calcular()">Calcular combinações</button>
+
+        <div id="result" class="result" style="display:none;">
+            <h3>Combinações encontradas:</h3>
+            <ul id="resultList"></ul>
+        </div>
+
+        <div id="error" class="error" style="display:none;">
+            Nenhuma combinação válida encontrada. Tente aumentar o número de resistores ou a tolerância.
+        </div>
+    </div>
+
+    <script>
+        const R_E24 = [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1];
+        const R_E48 = [1.00, 1.05, 1.10, 1.15, 1.21, 1.27, 1.33, 1.40, 1.47, 1.54, 1.62, 1.69, 1.78, 1.87, 1.96, 2.05, 2.15, 2.26, 2.37, 2.49, 2.61, 2.74, 2.87, 3.01, 3.16, 3.32, 3.48, 3.65, 3.83, 4.02, 4.22, 4.42, 4.64, 4.87, 5.11, 5.36, 5.62, 5.90, 6.19, 6.49, 6.81, 7.15, 7.50, 7.87, 8.25, 8.66, 9.09, 9.53];
+        const R_E96 = [1.00, 1.02, 1.05, 1.07, 1.10, 1.13, 1.15, 1.18, 1.21, 1.24, 1.27, 1.30, 1.33, 1.37, 1.40, 1.43, 1.47, 1.50, 1.54, 1.58, 1.62, 1.65, 1.69, 1.74, 1.78, 1.82, 1.87, 1.91, 1.96, 2.00, 2.05, 2.10, 2.16, 2.21, 2.26, 2.32, 2.37, 2.43, 2.49, 2.55, 2.61, 2.67, 2.74, 2.80, 2.87, 2.94, 3.01, 3.16, 3.24, 3.32, 3.40, 3.48, 3.57, 3.65, 3.74, 3.83, 3.92, 4.02, 4.12, 4.22, 4.32, 4.42, 4.53, 4.64, 4.75, 4.87, 4.99, 5.11, 5.23, 5.36, 5.49, 5.62, 5.76, 5.90, 6.04, 6.19, 6.34, 6.49, 6.65, 6.81, 6.98, 7.15, 7.32, 7.50, 7.68, 7.87, 8.06, 8.25, 8.45, 8.66, 8.87, 9.09, 9.31, 9.53, 9.76];
+
+        function gerarResistoresComerciais(serie) {
+            const fatores = [1, 10, 100, 1e3, 10e3, 100e3];
+            return fatores.flatMap(factor => serie.map(resistor => Math.round(resistor * factor * 10) / 10));
+        }
+
+        function getPermutations(array, n) {
+            let results = [];
+            function combine(tempArray, startIndex) {
+                if (tempArray.length === n) {
+                    results.push([...tempArray]);
+                    return;
+                }
+                for (let i = startIndex; i < array.length; i++) {
+                    tempArray.push(array[i]);
+                    combine(tempArray, i + 1);
+                    tempArray.pop();
+                }
+            }
+            combine([], 0);
+            return results;
+        }
+
+        function gerarArranjos(resistores, maxResistores) {
+            let arranjos = [];
+            for (let n = 1; n <= maxResistores; n++) {
+                arranjos = arranjos.concat(getPermutations(resistores, n));
+            }
+            return arranjos;
+        }
+
+        function resistenciaSerie(resistores) {
+            return resistores.reduce((a, b) => a + b, 0);
+        }
+
+        function resistenciaParalelo(resistores) {
+            return 1 / resistores.reduce((a, b) => a + (1 / b), 0);
+        }
+
+        function encontrarArranjosResistores(resistores, resistenciaDesejada, tolerancia, maxResistores) {
+            let melhoresArranjos = [];
+            let arranjos = gerarArranjos(resistores, maxResistores);
+            arranjos.forEach(res => {
+                let rSerie = resistenciaSerie(res);
+                let rParalelo = resistenciaParalelo(res);
+                let erroSerie = Math.abs(rSerie - resistenciaDesejada) / resistenciaDesejada;
+                let erroParalelo = Math.abs(rParalelo - resistenciaDesejada) / resistenciaDesejada;
+
+                if ((erroSerie <= tolerancia) && (res.length == 1)) melhoresArranjos.push({ tipo: "Único", res: res, valor: rSerie, erro: erroSerie });
+                else if (erroSerie <= tolerancia) melhoresArranjos.push({ tipo: "Série", res: res.join(" e "), valor: rSerie, erro: erroSerie });
+                else if (erroParalelo <= tolerancia) melhoresArranjos.push({ tipo: "Paralelo", res: res.join(" e "), valor: rParalelo, erro: erroParalelo });
+            });
+
+            return melhoresArranjos.sort((a, b) => a.erro - b.erro);
+
+            return melhoresArranjos;
+        }
+
+        function calcular() {
+            let resistenciaDesejada = parseFloat(document.getElementById("resistencia").value);
+            let tolerancia = parseFloat(document.getElementById("tolerancia").value) / 100;
+            let maxResistores = parseInt(document.getElementById("max_resistores").value);
+            let serie = document.getElementById("serie").value;
+            let resistores = gerarResistoresComerciais(serie === "E24" ? R_E24 : serie === "E48" ? R_E48 : R_E96);
+
+            let resultados = encontrarArranjosResistores(resistores, resistenciaDesejada, tolerancia, maxResistores);
+
+            let resultList = document.getElementById("resultList");
+            resultList.innerHTML = "";
+            document.getElementById("result").style.display = "none";
+            document.getElementById("error").style.display = "none";
+
+            if (resultados.length > 0) {
+                let totalResultados = resultados.length;
+                let resultadosExibidos = resultados.slice(0, 20);
+
+                // Mensagem no topo
+                let mensagemTopo = document.createElement("p");
+                mensagemTopo.textContent = `${totalResultados} resultados encontrados. Exibindo os ${resultadosExibidos.length} melhores`;
+                resultList.appendChild(mensagemTopo);
+
+                // Criação da tabela
+                let tabela = document.createElement("table");
+                tabela.style.width = "100%";
+                tabela.style.borderCollapse = "collapse";
+
+                // Cabeçalho da tabela
+                let cabecalho = tabela.createTHead();
+                let linhaCabecalho = cabecalho.insertRow();
+                ["Tipo", "Resistores", "Resistência (Ω)", "Erro (%)"].forEach(texto => {
+                    let th = document.createElement("th");
+                    th.textContent = texto;
+                    th.style.border = "1px solid black";
+                    th.style.padding = "8px";
+                    th.style.textAlign = "center";
+                    linhaCabecalho.appendChild(th);
+                });
+
+                // Corpo da tabela
+                let corpoTabela = tabela.createTBody();
+                resultadosExibidos.forEach(res => {
+                    let linha = corpoTabela.insertRow();
+
+                    // Coluna Tipo
+                    let tipoCell = linha.insertCell();
+                    tipoCell.textContent = res.tipo;
+                    tipoCell.style.border = "1px solid black";
+                    tipoCell.style.padding = "8px";
+                    tipoCell.style.textAlign = "center";
+
+                    // Coluna Resistores
+                    let resistoresCell = linha.insertCell();
+                    resistoresCell.textContent = res.res;
+                    resistoresCell.style.border = "1px solid black";
+                    resistoresCell.style.padding = "8px";
+                    resistoresCell.style.textAlign = "center";
+
+                    // Coluna Resistência
+                    let resistenciaCell = linha.insertCell();
+                    resistenciaCell.textContent = res.valor.toFixed(2);
+                    resistenciaCell.style.border = "1px solid black";
+                    resistenciaCell.style.padding = "8px";
+                    resistenciaCell.style.textAlign = "center";
+
+                    // Coluna Erro
+                    let erroCell = linha.insertCell();
+                    erroCell.textContent = (res.erro * 100).toFixed(2);
+                    erroCell.style.border = "1px solid black";
+                    erroCell.style.padding = "8px";
+                    erroCell.style.textAlign = "center";
+                });
+
+                resultList.appendChild(tabela);
+                document.getElementById("result").style.display = "block";
+            } else {
+                document.getElementById("error").style.display = "block";
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
