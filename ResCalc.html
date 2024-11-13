@@ -14,6 +14,7 @@
             height: 100vh;
             margin: 0;
             background-color: #f4f4f4;
+            flex-direction: column;
         }
 
         .container {
@@ -22,6 +23,8 @@
             background-color: white;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
+            overflow: auto;
+            overflow-x: hidden;
         }
 
         h1 {
@@ -49,6 +52,7 @@
             color: red;
             font-weight: bold;
         }
+
     </style>
 </head>
 
@@ -167,7 +171,7 @@
 
             if (resultados.length > 0) {
                 let totalResultados = resultados.length;
-                let resultadosExibidos = resultados.slice(0, 20);
+                let resultadosExibidos = resultados.slice(0, 50);
 
                 // Mensagem no topo
                 let mensagemTopo = document.createElement("p");
