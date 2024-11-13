@@ -146,8 +146,8 @@
                 let erroParalelo = Math.abs(rParalelo - resistenciaDesejada) / resistenciaDesejada;
 
                 if ((erroSerie <= tolerancia) && (res.length == 1)) melhoresArranjos.push({ tipo: "Único", res: res, valor: rSerie, erro: erroSerie });
-                else if (erroSerie <= tolerancia) melhoresArranjos.push({ tipo: "Série", res: res.join(" e "), valor: rSerie, erro: erroSerie });
-                else if (erroParalelo <= tolerancia) melhoresArranjos.push({ tipo: "Paralelo", res: res.join(" e "), valor: rParalelo, erro: erroParalelo });
+                else if (erroSerie <= tolerancia) melhoresArranjos.push({ tipo: "Série", res: res.join("; "), valor: rSerie, erro: erroSerie });
+                else if (erroParalelo <= tolerancia) melhoresArranjos.push({ tipo: "Paralelo", res: res.join("; "), valor: rParalelo, erro: erroParalelo });
             });
 
             return melhoresArranjos.sort((a, b) => a.erro - b.erro);
